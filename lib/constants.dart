@@ -1,0 +1,2 @@
+const LEVEL_SIZE = 1000.0;
+const PLAYER_SIZE = 15.0;
