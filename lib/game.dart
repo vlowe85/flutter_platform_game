@@ -35,6 +35,13 @@ class _GameState extends State<Game> {
 
 
   @override
+  void dispose() {
+    super.dispose();
+    _timer?.cancel();
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     FocusScope.of(context).requestFocus(_focusNode);
     return Container(
@@ -70,8 +77,8 @@ class _GameState extends State<Game> {
         List<Positioned> gamePieces = List();
         gamePieces.add(Positioned(
           child: PlayerPiece(colour: _player.colour),
-          left: _player.position.x * PLAYER_SIZE,
-          top: _player.position.y * PLAYER_SIZE,
+          left: _player.position.x,
+          top: _player.position.y,
         ));
 
         _platforms.forEach((platform) {
@@ -115,38 +122,41 @@ class _GameState extends State<Game> {
 
     //generate level platform
     _platforms.add(Platform(colour: Colors.red, height: 20, width: 500, position: Point(200, 700)));
+    _platforms.add(Platform(colour: Colors.blue, height: 20, width: 20, position: Point(670, 650)));
     _platforms.add(Platform(colour: Colors.blue, height: 20, width: 200, position: Point(700, 600)));
 
     _generateStartPosition();
     _changeGameState(GameState.PLAYING);
-    _timer = Timer.periodic(Duration(milliseconds: 30), _onTimerTick);
+    _timer = Timer.periodic(Duration(milliseconds: 16), _onTimerTick);
   }
 
 
   bool _isWallCollision() {
     bool hasCollision = false;
     var currentPosition = _player.position;
-    if (currentPosition.x < 0 || currentPosition.y < 0 || currentPosition.x > LEVEL_SIZE / PLAYER_SIZE || currentPosition.y > LEVEL_SIZE / PLAYER_SIZE) {
+    if (currentPosition.x < 0 || currentPosition.y < 0 || currentPosition.x > LEVEL_SIZE || currentPosition.y > LEVEL_SIZE) {
       hasCollision = true;
     }
     return hasCollision;
   }
 
 
-  @override
-  void dispose() {
-    super.dispose();
-    _timer?.cancel();
-  }
-
   bool _isPlatformCollision() {
     bool hasCollision = false;
     _platforms.forEach((platform) {
-      if (platform.contains(_player.position.x, _player.position.y)) {
+      if (overlap(_player.position.x, _player.position.y + 2 , PLAYER_SIZE, PLAYER_SIZE, platform.position.x, platform.position.y, platform.width, platform.height)) {
         hasCollision = true;
       }
     });
     return hasCollision;
+  }
+
+
+  bool overlap(x1, y1, w1, h1, x2, y2, w2, h2) {
+    return !(((x1 + w1 - 1) < x2) ||
+        ((x2 + w2 - 1) < x1) ||
+        ((y1 + h1 - 1) < y2) ||
+        ((y2 + h2 - 1) < y1));
   }
 
 
@@ -169,9 +179,11 @@ class _GameState extends State<Game> {
     switch(keyValues.map[event.logicalKey.keyId]) {
       case KeyboardPress.LEFT_ARROW:
         _player.moveLeft = event.runtimeType == RawKeyDownEvent;
+        if (event.runtimeType == RawKeyUpEvent) _player.speedX = 0;
         break;
       case KeyboardPress.RIGHT_ARROW:
         _player.moveRight = event.runtimeType == RawKeyDownEvent;
+        if (event.runtimeType == RawKeyUpEvent) _player.speedX = 0;
         break;
       case KeyboardPress.SPACE:
         _player.jump();
@@ -204,7 +216,7 @@ class _GameState extends State<Game> {
   }
 
   Point _generateStartPosition() {
-    final midPoint = (LEVEL_SIZE / PLAYER_SIZE / 2);
+    final midPoint = (LEVEL_SIZE / 2);
     return Point(midPoint, midPoint);
   }
 
